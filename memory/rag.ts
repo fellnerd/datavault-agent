@@ -9,6 +9,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import { fileURLToPath } from 'url';
+import { globSync } from 'glob';
 
 // ES Module __dirname equivalent
 const __filename = fileURLToPath(import.meta.url);
@@ -34,97 +35,74 @@ const RAG_SIMILARITY_THRESHOLD = parseFloat(process.env.RAG_SIMILARITY_THRESHOLD
 // Project root (parent of agent directory)
 const PROJECT_ROOT = path.resolve(__dirname, '../../..');
 
-// Documents to index for RAG - organized by category
-const DOCUMENTS_TO_INDEX = [
-  // === Documentation ===
-  'docs/LESSONS_LEARNED.md',
-  'docs/SYSTEM.md',
-  'docs/USER.md',
-  'docs/DEVELOPER.md',
-  'docs/MODEL_ARCHITECTURE.md',
-  'docs/MCP_SERVER.md',
-  'docs/RAG_SYSTEM.md',
-  'docs/MDS_DBT.md',
+// ============== Dynamic Document Discovery ==============
+
+/**
+ * Glob patterns for documents to index
+ * These patterns are relative to PROJECT_ROOT
+ */
+const INDEX_PATTERNS = [
+  // Documentation
+  'docs/**/*.md',
   
-  // === Instructions & Prompts ===
-  '.github/copilot-instructions.md',
-  '.github/instructions/datavault-dbt.instructions.md',
+  // Design Documentation
+  'design/**/*.{md,mmd}',
   
-  // === dbt Configuration ===
+  // GitHub Instructions
+  '.github/**/*.md',
+  
+  // dbt Configuration
   'dbt_project.yml',
   
-  // === Macros (SQL Templates) ===
-  'macros/generate_schema_name.sql',
-  'macros/hash_override.sql',
-  'macros/satellite_current_flag.sql',
-  'macros/ghost_records.sql',
-  'macros/cleanup_old_objects.sql',
+  // Macros (all SQL files)
+  'macros/**/*.sql',
   
-  // === Staging Layer ===
-  'models/staging/sources.yml',
-  'models/staging/stg_company.sql',
-  'models/staging/stg_country.sql',
-  'models/staging/stg_project.sql',
+  // Models (all SQL and YML files)
+  'models/**/*.{sql,yml}',
   
-  // === Raw Vault - Werkportal - Hubs ===
-  'models/raw_vault/werkportal/hubs/hub_company.sql',
-  'models/raw_vault/werkportal/hubs/hub_country.sql',
-  'models/raw_vault/werkportal/hubs/hub_project.sql',
-  'models/raw_vault/werkportal/hubs/hub_invoice.sql',
+  // Seeds schema
+  'seeds/**/*.yml',
   
-  // === Raw Vault - Werkportal - Satellites ===
-  'models/raw_vault/werkportal/satellites/sat_company.sql',
-  'models/raw_vault/werkportal/satellites/sat_company_client_ext.sql',
-  'models/raw_vault/werkportal/satellites/sat_country.sql',
-  'models/raw_vault/werkportal/satellites/sat_project.sql',
-  'models/raw_vault/werkportal/satellites/sat_invoice.sql',
-  'models/raw_vault/werkportal/satellites/eff_sat_company_country.sql',
+  // Scripts
+  'scripts/**/*.sql',
   
-  // === Raw Vault - Werkportal - Links ===
-  'models/raw_vault/werkportal/links/link_company_country.sql',
-  'models/raw_vault/werkportal/links/link_company_role.sql',
-  
-  // === Business Vault ===
-  'models/business_vault/pit_company.sql',
-  
-  // === Marts ===
-  'models/mart/_common/dim_date.sql',
-  'models/mart/project/company_current_v.sql',
-  'models/mart/project/customer_current_v.sql',
-  
-  // === Schema Definitions ===
-  'models/schema.yml',
-  'seeds/schema.yml',
-  
-  // === Scripts ===
-  'scripts/setup_werkportal_prod.sql',
-  
-  // === Agent Documentation ===
+  // Agent Documentation
   'agent/README.md',
-  
-  // === Design Documentation ===
-  'design/README.md',
-  // Staging Design
-  'design/staging/README.md',
-  'design/staging/_template.md',
-  'design/staging/source_mapping.md',
-  // Raw Vault Design
-  'design/raw-vault/README.md',
-  'design/raw-vault/overview.md',
-  'design/raw-vault/_template_hub.md',
-  'design/raw-vault/_template_link.md',
-  'design/raw-vault/_integrated/overview.md',
-  'design/raw-vault/werkportal/overview.md',
-  'design/raw-vault/werkportal/er-diagram.mmd',
-  // Business Vault Design
-  'design/business-vault/README.md',
-  'design/business-vault/overview.md',
-  'design/business-vault/_template_bridge.md',
-  'design/business-vault/_template_pit.md',
-  // Data Flow Design
-  'design/data-flow/README.md',
-  'design/data-flow/end_to_end.md',
 ];
+
+/**
+ * Patterns to exclude from indexing
+ */
+const EXCLUDE_PATTERNS = [
+  '**/node_modules/**',
+  '**/dist/**',
+  '**/target/**',
+  '**/dbt_packages/**',
+  '**/.git/**',
+  '**/logs/**',
+];
+
+/**
+ * Discover all documents to index based on glob patterns
+ */
+function discoverDocuments(): string[] {
+  const allFiles: Set<string> = new Set();
+  
+  for (const pattern of INDEX_PATTERNS) {
+    const matches = globSync(pattern, {
+      cwd: PROJECT_ROOT,
+      ignore: EXCLUDE_PATTERNS,
+      nodir: true,
+    });
+    
+    for (const match of matches) {
+      allFiles.add(match);
+    }
+  }
+  
+  // Sort for consistent ordering
+  return Array.from(allFiles).sort();
+}
 
 // ============== Types ==============
 
@@ -289,15 +267,19 @@ export async function indexAllDocuments(): Promise<{
     throw new Error(health.error || 'Embedding model not loaded');
   }
 
+  // Discover documents dynamically
+  const documentsToIndex = discoverDocuments();
+
   let totalChunks = 0;
   let documentsIndexed = 0;
   let documentsSkipped = 0;
 
   console.log('═══════════════════════════════════════════════════════════');
   console.log('  RAG Document Indexing');
+  console.log(`  Discovered ${documentsToIndex.length} documents to index`);
   console.log('═══════════════════════════════════════════════════════════');
 
-  for (const doc of DOCUMENTS_TO_INDEX) {
+  for (const doc of documentsToIndex) {
     try {
       const result = await indexDocument(doc);
       totalChunks += result.chunksIndexed;
@@ -308,6 +290,18 @@ export async function indexAllDocuments(): Promise<{
       }
     } catch (error) {
       console.error(`❌ Failed to index ${doc}:`, error);
+    }
+  }
+
+  // Clean up orphaned documents (files that were deleted)
+  const db = getDatabase();
+  const indexedFiles = new Set(documentsToIndex);
+  const allIndexedDocs = db.getAllIndexedDocuments();
+  
+  for (const indexedDoc of allIndexedDocs) {
+    if (!indexedFiles.has(indexedDoc)) {
+      console.log(`🗑️  Removing orphaned: ${indexedDoc}`);
+      db.deleteDocChunks(indexedDoc);
     }
   }
 
@@ -457,13 +451,7 @@ export async function getIndexStatsDetailed(): Promise<{
  */
 export function clearIndex(): number {
   const db = getDatabase();
-  let deleted = 0;
-
-  for (const doc of DOCUMENTS_TO_INDEX) {
-    deleted += db.deleteDocChunks(doc);
-  }
-
-  return deleted;
+  return db.clearAllChunks();
 }
 
 /**
@@ -489,6 +477,8 @@ export function getRAGConfig(): {
   chunkOverlap: number;
   topK: number;
   similarityThreshold: number;
+  indexPatterns: string[];
+  excludePatterns: string[];
   documentsToIndex: string[];
 } {
   return {
@@ -496,6 +486,8 @@ export function getRAGConfig(): {
     chunkOverlap: RAG_CHUNK_OVERLAP,
     topK: RAG_TOP_K,
     similarityThreshold: RAG_SIMILARITY_THRESHOLD,
-    documentsToIndex: DOCUMENTS_TO_INDEX,
+    indexPatterns: INDEX_PATTERNS,
+    excludePatterns: EXCLUDE_PATTERNS,
+    documentsToIndex: discoverDocuments(),
   };
 }
