@@ -14,7 +14,15 @@
 import { z } from 'zod';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { writeFile, PATHS, getRelativePath, fileExists, ensureDir } from '../utils/fileOperations.js';
+import { 
+  writeFile, 
+  PATHS, 
+  getRelativePath, 
+  fileExists, 
+  ensureDir,
+  getConceptPaths,
+  getAvailableConcepts
+} from '../utils/fileOperations.js';
 
 // Metadata columns that should not be included in static tables
 const EXCLUDED_COLUMNS = [
@@ -69,10 +77,24 @@ function getUniqueColumnAlias(satName: string, colName: string, usedAliases: Set
 
 /**
  * Extract payload columns from a satellite SQL file
+ * Searches in all concept directories
  */
 async function extractSatelliteColumns(satName: string): Promise<string[]> {
   try {
-    const satPath = path.join(PATHS.satellites, `${satName}.sql`);
+    // Find satellite in any concept directory
+    let satPath: string | null = null;
+    const concepts = await getAvailableConcepts();
+    
+    for (const concept of concepts) {
+      const testPath = path.join(getConceptPaths(concept).satellites, `${satName}.sql`);
+      if (await fileExists(testPath)) {
+        satPath = testPath;
+        break;
+      }
+    }
+    
+    if (!satPath) return [];
+    
     const content = await fs.readFile(satPath, 'utf-8');
     
     const payloadMatch = content.match(/--\s*Payload[\s\S]*?FROM/i);
