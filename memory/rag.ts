@@ -37,13 +37,14 @@ const PROJECT_ROOT = path.resolve(__dirname, '../../..');
 // Documents to index for RAG - organized by category
 const DOCUMENTS_TO_INDEX = [
   // === Documentation ===
-  'LESSONS_LEARNED.md',
+  'docs/LESSONS_LEARNED.md',
   'docs/SYSTEM.md',
   'docs/USER.md',
   'docs/DEVELOPER.md',
   'docs/MODEL_ARCHITECTURE.md',
   'docs/MCP_SERVER.md',
   'docs/RAG_SYSTEM.md',
+  'docs/MDS_DBT.md',
   
   // === Instructions & Prompts ===
   '.github/copilot-instructions.md',
@@ -65,33 +66,31 @@ const DOCUMENTS_TO_INDEX = [
   'models/staging/stg_country.sql',
   'models/staging/stg_project.sql',
   
-  // === Raw Vault - Hubs ===
-  'models/raw_vault/hubs/hub_company.sql',
-  'models/raw_vault/hubs/hub_country.sql',
-  'models/raw_vault/hubs/hub_project.sql',
+  // === Raw Vault - Werkportal - Hubs ===
+  'models/raw_vault/werkportal/hubs/hub_company.sql',
+  'models/raw_vault/werkportal/hubs/hub_country.sql',
+  'models/raw_vault/werkportal/hubs/hub_project.sql',
+  'models/raw_vault/werkportal/hubs/hub_invoice.sql',
   
-  // === Raw Vault - Satellites ===
-  'models/raw_vault/satellites/sat_company.sql',
-  'models/raw_vault/satellites/sat_company_client_ext.sql',
-  'models/raw_vault/satellites/sat_country.sql',
-  'models/raw_vault/satellites/sat_project.sql',
-  'models/raw_vault/satellites/eff_sat_company_country.sql',
+  // === Raw Vault - Werkportal - Satellites ===
+  'models/raw_vault/werkportal/satellites/sat_company.sql',
+  'models/raw_vault/werkportal/satellites/sat_company_client_ext.sql',
+  'models/raw_vault/werkportal/satellites/sat_country.sql',
+  'models/raw_vault/werkportal/satellites/sat_project.sql',
+  'models/raw_vault/werkportal/satellites/sat_invoice.sql',
+  'models/raw_vault/werkportal/satellites/eff_sat_company_country.sql',
   
-  // === Raw Vault - Links ===
-  'models/raw_vault/links/link_company_country.sql',
-  'models/raw_vault/links/link_company_role.sql',
+  // === Raw Vault - Werkportal - Links ===
+  'models/raw_vault/werkportal/links/link_company_country.sql',
+  'models/raw_vault/werkportal/links/link_company_role.sql',
   
   // === Business Vault ===
   'models/business_vault/pit_company.sql',
   
   // === Marts ===
-  'models/mart/v_company_current.sql',
-  'models/mart/v_company_top3.sql',
-  'models/mart/v_countries.sql',
-  'models/mart/customer/v_top10_customers.sql',
+  'models/mart/_common/dim_date.sql',
   'models/mart/project/company_current_v.sql',
-  'models/mart/reference/v_country_names.sql',
-  'models/mart/reporting/v_company_top5.sql',
+  'models/mart/project/customer_current_v.sql',
   
   // === Schema Definitions ===
   'models/schema.yml',
