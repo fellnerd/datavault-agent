@@ -39,6 +39,9 @@ import { handleRunCommand, runCommandTool } from './runCommand.js';
 // Database Tools (Read-Only)
 import { databaseTools } from './database/index.js';
 
+// Parquet Explorer Tools
+import { parquetTools } from './parquetExplorer.js';
+
 // Tool definitions for Claude API
 export const TOOL_DEFINITIONS: Anthropic.Messages.Tool[] = [
   // Data Vault Creation
@@ -75,6 +78,10 @@ export const TOOL_DEFINITIONS: Anthropic.Messages.Tool[] = [
   databaseTools.db_preview_data.tool,
   databaseTools.db_run_query.tool,
   databaseTools.db_get_row_counts.tool,
+  // Parquet Explorer
+  parquetTools.list_parquet_files.tool,
+  parquetTools.get_parquet_schema.tool,
+  parquetTools.get_parquet_data.tool,
 ];
 
 // Tool execution handlers
@@ -115,6 +122,10 @@ export const TOOL_HANDLERS: Record<string, ToolHandler> = {
   db_preview_data: (input) => databaseTools.db_preview_data.handler(input as { schema: string; table: string; limit?: number; columns?: string[]; where?: string; target?: string }),
   db_run_query: (input) => databaseTools.db_run_query.handler(input as { query: string; target?: string }),
   db_get_row_counts: (input) => databaseTools.db_get_row_counts.handler(input as { target?: string }),
+  // Parquet Explorer
+  list_parquet_files: (input) => parquetTools.list_parquet_files.handler(input as { folder_path: string }),
+  get_parquet_schema: (input) => parquetTools.get_parquet_schema.handler(input as { folder_path: string; file_name: string }),
+  get_parquet_data: (input) => parquetTools.get_parquet_data.handler(input as { folder_path: string; file_name: string; limit?: number }),
 };
 
 /**
