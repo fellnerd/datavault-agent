@@ -101,6 +101,29 @@ const DOCUMENTS_TO_INDEX = [
   
   // === Agent Documentation ===
   'agent/README.md',
+  
+  // === Design Documentation ===
+  'design/README.md',
+  // Staging Design
+  'design/staging/README.md',
+  'design/staging/_template.md',
+  'design/staging/source_mapping.md',
+  // Raw Vault Design
+  'design/raw-vault/README.md',
+  'design/raw-vault/overview.md',
+  'design/raw-vault/_template_hub.md',
+  'design/raw-vault/_template_link.md',
+  'design/raw-vault/_integrated/overview.md',
+  'design/raw-vault/werkportal/overview.md',
+  'design/raw-vault/werkportal/er-diagram.mmd',
+  // Business Vault Design
+  'design/business-vault/README.md',
+  'design/business-vault/overview.md',
+  'design/business-vault/_template_bridge.md',
+  'design/business-vault/_template_pit.md',
+  // Data Flow Design
+  'design/data-flow/README.md',
+  'design/data-flow/end_to_end.md',
 ];
 
 // ============== Types ==============
