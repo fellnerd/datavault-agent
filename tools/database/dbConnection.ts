@@ -57,6 +57,26 @@ export interface QueryResult {
 }
 
 /**
+ * Resolve Jinja env_var() template syntax
+ * Converts {{ env_var('VAR_NAME') }} to actual environment variable value
+ */
+function resolveEnvVar(value: string): string {
+  if (typeof value !== 'string') return value;
+  
+  // Match {{ env_var('VAR_NAME') }} or {{ env_var("VAR_NAME") }}
+  const envVarPattern = /\{\{\s*env_var\s*\(\s*['"]([^'"]+)['"]\s*\)\s*\}\}/g;
+  
+  return value.replace(envVarPattern, (match, varName) => {
+    const envValue = process.env[varName];
+    if (!envValue) {
+      console.warn(`Warning: Environment variable '${varName}' not set`);
+      return '';
+    }
+    return envValue;
+  });
+}
+
+/**
  * Load database configuration from dbt profiles.yml
  */
 export async function loadDbConfig(target: string = 'dev'): Promise<DbConfig> {
@@ -72,11 +92,11 @@ export async function loadDbConfig(target: string = 'dev'): Promise<DbConfig> {
     }
     
     return {
-      server: output.server,
+      server: resolveEnvVar(output.server),
       port: output.port || 1433,
-      database: output.database,
-      user: output.user,
-      password: output.password,
+      database: resolveEnvVar(output.database),
+      user: resolveEnvVar(output.user),
+      password: resolveEnvVar(output.password),
       encrypt: output.encrypt ?? true,
       trustServerCertificate: output.trust_cert ?? false,
     };
