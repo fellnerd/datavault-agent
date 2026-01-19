@@ -186,7 +186,7 @@ SELECT * FROM staged
   return output.join('\n');
 }
 
-  const createStagingTool = {
+export const createStagingTool = {
     name: 'create_staging',
     description: `Creates a staging view with hash calculations.
 Calculates hk_<entity> (hash key) and hd_<entity> (hash diff).
